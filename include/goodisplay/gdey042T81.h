@@ -25,6 +25,13 @@
 #define GDEY042T81_8PIX_BLACK 0x00
 #define GDEY042T81_8PIX_WHITE 0xFF
 
+enum GDEY042T81_REFRESH_MODE {
+  GDEY042T81_REFRESH_MODE_FULL,
+  GDEY042T81_REFRESH_MODE_FAST,
+  GDEY042T81_REFRESH_MODE_PARTIAL,
+  GDEY042T81_REFRESH_MODE_4G,
+};
+
 class Gdey042T81 : public Epd
 {
   public:
@@ -34,24 +41,43 @@ class Gdey042T81 : public Epd
     
     uint8_t fastmode = 0; // With 1 it will not go to power off
     bool is_powered = false;
+
+    void setRefreshMode(GDEY042T81_REFRESH_MODE mode);
     
     // EPD tests 
     void init(bool debug = false);
+
+    void setMode(GDEY042T81_REFRESH_MODE mode);
+
+    void hwInitFull();
+    void hwInitFast();
+    void hwInit4Gray();
+
     void drawPixel(int16_t x, int16_t y, uint16_t color);  // Override GFX own drawPixel method
     
     void fillScreen(uint16_t color);
     void update();
+    void updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation = true);
     void deepsleep();
 
   private:
     EpdSpi& IO;
 
-    uint8_t _black_buffer[GDEY042T81_BUFFER_SIZE];
+    void _hwInitPartial();
+    uint16_t _setPartialRamArea(uint16_t x, uint16_t y, uint16_t xe, uint16_t ye);
+    bool _partial_mode = false;
+
+    uint8_t _buffer1[GDEY042T81_BUFFER_SIZE];
+    uint8_t _buffer2[GDEY042T81_BUFFER_SIZE];
+    GDEY042T81_REFRESH_MODE _refresh_mode = GDEY042T81_REFRESH_MODE_FULL;
 
     void _wakeUp();
     void _sleep();
     void _waitBusy(const char* message);
     void _rotate(uint16_t& x, uint16_t& y, uint16_t& w, uint16_t& h);
+
+    void _hwPreInit();
+    void _hwRAMInit();
 
     static const epd_init_4 epd_resolution;
 };

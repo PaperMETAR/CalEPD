@@ -28,6 +28,49 @@ void Gdey042T81::init(bool debug)
     fillScreen(EPD_WHITE);
 }
 
+void Gdey042T81::initPartialUpdate(){
+    // printf("INIT PARTIAL MODE\n");
+    // IO.reset(10);
+
+    // IO.cmd(0x04); // Power on
+		// _waitBusy("0x04");
+
+    // IO.cmd(epd_wakeup_power.cmd);
+    // for (int i=0;i<epd_wakeup_power.databytes;++i) {
+    //   IO.data(epd_wakeup_power.data[i]);
+    // }
+    // IO.cmd(epd_soft_start.cmd);
+    // for (int i=0;i<epd_soft_start.databytes;++i) {
+    //   IO.data(epd_soft_start.data[i]);
+    // }
+    // IO.cmd(0x00);     // panel setting
+    // IO.data(0x3f);    // 300x400 B/W mode, LUT set by register
+    // IO.cmd(0x30);     // PLL setting
+    // IO.data(0x3a);    // 3a 100HZ   29 150Hz 39 200HZ 31 171HZ
+
+    // IO.cmd(0x82); // vcom_DC setting
+    // IO.data(0x1A);
+    // IO.cmd(0X50);			// VCOM AND DATA INTERVAL SETTING
+		// IO.data(0xD7);		// Border avoid flashing
+    
+    // // LUT Tables for partial update. Send them directly in 42 bytes chunks. In total 210 bytes
+    // IO.cmd(lut_20_vcom0_partial.cmd);
+    // IO.data(lut_20_vcom0_partial.data,lut_20_vcom0_partial.databytes);
+
+    // IO.cmd(lut_21_ww_partial.cmd);
+    // IO.data(lut_21_ww_partial.data,lut_21_ww_partial.databytes);
+
+    // IO.cmd(lut_22_bw_partial.cmd);
+    // IO.data(lut_22_bw_partial.data,lut_22_bw_partial.databytes);
+
+    // IO.cmd(lut_23_wb_partial.cmd);
+    // IO.data(lut_23_wb_partial.data,lut_23_wb_partial.databytes);
+
+    // IO.cmd(lut_24_bb_partial.cmd);
+    // IO.data(lut_24_bb_partial.data,lut_24_bb_partial.databytes);
+
+}
+
 void Gdey042T81::fillScreen(uint16_t color)
 {
   uint8_t fill_color = GDEY042T81_8PIX_WHITE;
@@ -78,6 +121,7 @@ void Gdey042T81::_wakeUp(){
   IO.data(0x01);
   IO.data(0x00); // RAM y address end at 00h
   IO.data(0x00);
+  IO.data(0x00);
 
   IO.cmd(0x4E);
   IO.data(0x00);
@@ -112,7 +156,8 @@ void Gdey042T81::update()
   uint64_t endTime = esp_timer_get_time();
   
   IO.cmd(0x22);  //Display Update Control
-  IO.data(0xC7);   
+  // IO.data(0xC7);
+  IO.data(0xF7);
   IO.cmd(0x20);  //Activate Display Update Sequence
   _waitBusy("update");
   uint64_t refreshTime= esp_timer_get_time();
