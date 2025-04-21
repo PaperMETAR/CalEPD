@@ -1,4 +1,5 @@
 // 4.2 b/w GDEY042T81 https://www.good-display.com/product/386.html
+// Uses SSD1683 controller.
 // Note from GOODISPLAY: The GDEQ042T81 is fully compatible with GDEY042T81
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +59,11 @@ class Gdey042T81 : public Epd
     void fillScreen(uint16_t color);
     void update();
     void updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation = true);
+    
+    void updateWindow2(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation = true);
+    void _logicalToNative2(int16_t lx, int16_t ly, int16_t& nx, int16_t& ny);
+
+
     void deepsleep();
 
   private:
@@ -75,6 +81,7 @@ class Gdey042T81 : public Epd
     void _sleep();
     void _waitBusy(const char* message);
     void _rotate(uint16_t& x, uint16_t& y, uint16_t& w, uint16_t& h);
+    void _logicalToNative(int16_t lx, int16_t ly, int16_t& nx, int16_t& ny);
 
     void _hwPreInit();
     void _hwRAMInit();
