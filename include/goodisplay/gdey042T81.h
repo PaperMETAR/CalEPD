@@ -50,41 +50,28 @@ class Gdey042T81 : public Epd
 
     void setMode(GDEY042T81_REFRESH_MODE mode);
 
-    void hwInitFull();
-    void hwInitFast();
-    void hwInit4Gray();
-
     void drawPixel(int16_t x, int16_t y, uint16_t color);  // Override GFX own drawPixel method
     
     void fillScreen(uint16_t color);
     void update();
     void updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation = true);
-    
-    void updateWindow2(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool using_rotation = true);
-    void _logicalToNative2(int16_t lx, int16_t ly, int16_t& nx, int16_t& ny);
-
 
     void deepsleep();
 
   private:
     EpdSpi& IO;
 
-    void _hwInitPartial();
-    uint16_t _setPartialRamArea(uint16_t x, uint16_t y, uint16_t xe, uint16_t ye);
-    bool _partial_mode = false;
-
     uint8_t _buffer1[GDEY042T81_BUFFER_SIZE];
     uint8_t _buffer2[GDEY042T81_BUFFER_SIZE];
     GDEY042T81_REFRESH_MODE _refresh_mode = GDEY042T81_REFRESH_MODE_FULL;
 
     void _wakeUp();
+    
+    void _setPartialRamArea(uint16_t xs_bx, uint16_t y, uint16_t xe_bx, uint16_t ye);
+
     void _sleep();
     void _waitBusy(const char* message);
     void _rotate(uint16_t& x, uint16_t& y, uint16_t& w, uint16_t& h);
-    void _logicalToNative(int16_t lx, int16_t ly, int16_t& nx, int16_t& ny);
-
-    void _hwPreInit();
-    void _hwRAMInit();
 
     static const epd_init_4 epd_resolution;
 };
