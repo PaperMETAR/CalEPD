@@ -292,18 +292,18 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
     }
     ESP_LOGI(TAG, "updateWindow incoming: x=%u y=%u w=%u h=%u rot=%d", x, y, w, h, getRotation());
 
+    if ((x+w) > (GDEY042T81_WIDTH - 1)) {
+      ESP_LOGE(TAG, "updateWindow: x+w (%u) > GDEY042T81_WIDTH (%u), limiting w to max-width", x+w, GDEY042T81_WIDTH);
+      w = GDEY042T81_WIDTH - 1 - x;
+    }
+
     // Apply mirroring in X direction first - this is critical for correct coordinate mapping
     // Same mirroring as in drawPixel, applied to the region
     uint16_t mirrored_x = GDEY042T81_WIDTH - x - w - 1;
     x = mirrored_x;
 
-    if ((x+w) > (GDEY042T81_WIDTH - 1)) {
-      ESP_LOGE(TAG, "updateWindow: x+w > GDEY042T81_WIDTH, limiting w to max-width");
-      w = GDEY042T81_WIDTH - 1 - x;
-    }
-
     if ((y+h) > (GDEY042T81_HEIGHT - 1)) {
-      ESP_LOGE(TAG, "updateWindow: y+h > GDEY042T81_HEIGHT, limiting h to max-height");
+      ESP_LOGE(TAG, "updateWindow: y+h (%u) > GDEY042T81_HEIGHT (%u), limiting h to max-height", y+h, GDEY042T81_HEIGHT);
       h = GDEY042T81_HEIGHT - 1 - y;
     }
 
@@ -325,7 +325,7 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
     uint16_t xs_bx = x / 8;
     uint16_t xe_bx = (xe + 7) / 8;  // Proper ceil division for bytes
     
-    ESP_LOGI(TAG, "updateWindow native: x=%u y=%u xe=%u ye=%u xs_bx=%u xe_bx=%u", x, y, xe, ye, xs_bx, xe_bx);
+    ESP_LOGI(TAG, "updateWindow final: x=%u y=%u xe=%u ye=%u xs_bx=%u xe_bx=%u", x, y, xe, ye, xs_bx, xe_bx);
 
     // Initialize the display for partial update
     IO.reset(10);
@@ -355,10 +355,17 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
 
     // Set Y range (using pixel coordinates)
     IO.cmd(0x45);
-    IO.data(y % 256);
-    IO.data(y / 256);
-    IO.data(ye % 256);
-    IO.data(ye / 256);
+    if (getRotation() == 2) {
+      IO.data(ye % 256);
+      IO.data(ye / 256);
+      IO.data(y % 256);
+      IO.data(y / 256);
+    } else {
+      IO.data(y % 256);
+      IO.data(y / 256);
+      IO.data(ye % 256);
+      IO.data(ye / 256);
+    }
 
     // Set current position (start position for data transfer)
     IO.cmd(0x4E);
