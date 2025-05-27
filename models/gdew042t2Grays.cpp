@@ -256,20 +256,20 @@ void Gdew042t2Grays::fillScreen(uint16_t color)
     switch (color)
     {
       case EPD_BLACK:
-          b1 = 0xFF;
-          b2 = 0xFF;
+          b1 = 0x00;
+          b2 = 0x00;
       break;
       case EPD_LIGHTGREY:
-          b1 = 0xFF;
-          b2 = 0x00;
-      break;
-      case EPD_DARKGREY:
           b1 = 0x00;
           b2 = 0xFF;
       break;
-      case EPD_WHITE:
-          b1 = 0x00;
+      case EPD_DARKGREY:
+          b1 = 0xFF;
           b2 = 0x00;
+      break;
+      case EPD_WHITE:
+          b1 = 0xFF;
+          b2 = 0xFF;
       break;
     }
 
@@ -363,44 +363,41 @@ void Gdew042t2Grays::update()
           ++i;
         }
     }
-  
+
   } else {
-  /**** Color display description
-        white  gray1  gray2  black
-  0x10|  01     01     00     00
-  0x13|  01     00     01     00
-  ****************/
-  uint32_t bufindex = 0;
-  uint16_t bufferLenght = GDEW042T2_MONO_BUFFER_SIZE+1; // 15000
-  uint16_t bufferMaxSpi = 3000;
-  uint8_t xbuf[bufferMaxSpi];
+      /**** Color display description
+            white  gray1  gray2  black
+      0x10|  01     01     00     00
+      0x13|  01     00     01     00
+      ****************/
+      uint32_t bufindex = 0;
+      uint16_t bufferLength = GDEW042T2_MONO_BUFFER_SIZE + 1;  // 15000
+      uint16_t bufferMaxSpi = 3000;
+      uint8_t xbuf[bufferMaxSpi];
 
-  IO.cmd(0x10); //1st buffer: SPI1
+      IO.cmd(0x10);  // 1st buffer: SPI1
 
-  for(i=0;i<bufferLenght;i++)
-		{ 
-        xbuf[bufindex] = _buffer1[i];
-        // Flush SPI buffer
-        if (i>0 && i % bufferMaxSpi == 0) {
-          //printf("10 sent part buff %d from *%d\n", bufindex,i);
-          IO.data(xbuf, bufferMaxSpi);
-          bufindex = 0;
-        }
-        bufindex++;
-		}
-  bufindex = 0;
+      for (i = 0; i < bufferLength; i++) {
+          xbuf[bufindex] = _buffer1[i];
+          bufindex++;
+          // Flush SPI buffer when full or at the end
+          if (bufindex == bufferMaxSpi || i == bufferLength - 1) {
+              IO.data(xbuf, bufindex);  // Send actual number of bytes
+              bufindex = 0;
+          }
+      }
 
-  IO.cmd(0x13); //2nd buffer: SPI2
-  for(i=0;i<bufferLenght;i++)
-		{ 
-        xbuf[bufindex] = _buffer2[i];
-        // Flush SPI buffer
-        if (i>0 && i % bufferMaxSpi == 0) {
-          IO.data(xbuf, bufferMaxSpi);
-          bufindex = 0;
-        }
-        bufindex++;
-		}
+      IO.cmd(0x13);  // 2nd buffer: SPI2
+      bufindex = 0;
+      for (i = 0; i < bufferLength; i++) {
+          xbuf[bufindex] = _buffer2[i];
+          bufindex++;
+          // Flush SPI buffer when full or at the end
+          if (bufindex == bufferMaxSpi || i == bufferLength - 1) {
+              IO.data(xbuf, bufindex);  // Send actual number of bytes
+              bufindex = 0;
+          }
+      }
   }
   uint64_t endTime = esp_timer_get_time();
   IO.cmd(0x12);
