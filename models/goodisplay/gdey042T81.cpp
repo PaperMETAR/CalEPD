@@ -46,8 +46,10 @@ void Gdey042T81::_wakeUp() {
   }
 
 	IO.cmd(0x01); // Driver output control
-	IO.data((GDEY042T81_HEIGHT-1)%256);
-	IO.data((GDEY042T81_HEIGHT-1)/256);
+	// IO.data((GDEY042T81_HEIGHT-1)%256);
+	// IO.data((GDEY042T81_HEIGHT-1)/256);
+	IO.data((height()-1)%256);
+	IO.data((height()-1)/256);
 	IO.data(0x00);
 
   if (_refresh_mode == GDEY042T81_REFRESH_MODE_PARTIAL) {
@@ -60,14 +62,53 @@ void Gdey042T81::_wakeUp() {
     IO.data(0x00);
   }
 
-  IO.cmd(0x11);  // Data entry mode
-  IO.data(0x01);
-
   IO.cmd(0x3C); // board - BorderWavefrom
   if (_refresh_mode == GDEY042T81_REFRESH_MODE_PARTIAL) {
     IO.data(0x80);
   } else {
     IO.data(0x05);
+  }
+
+  int rotation = getRotation();
+  IO.cmd(0x11);  // Data entry mode
+  switch (rotation) {
+    // case 0:  // Portrait
+    //   IO.data(0x01);
+    //   break;
+    // case 1:  // Landscape
+    //   IO.data(0x03);
+    //   printf("Landscape\n");
+      
+    //   // == Set RAM Area
+    //   IO.cmd(0x44);
+    //   IO.data(0x00); // RAM x address start at 0
+    //   IO.data(0x31); // RAM x address end at 31h(49+1)*8->400
+
+    //   // Set Y range in pixels (up to 300-1). Since 300 requires 9 bits, we have to split it into
+    //   // 2 bytes. The first byte is the lower 8 bits, the second byte is the upper 8 bits.
+    //   IO.cmd(0x45);
+    //   IO.data(0x00); // RAM y address start at 00h
+    //   IO.data(0x00); // RAM y address start at 00h
+    //   IO.data(0x2B); // RAM y address end at 2Bh
+    //   IO.data(0x01); // RAM y address end at 01h
+
+    //   // == Set RAM Pointer
+    //   IO.cmd(0x4E);
+    //   IO.data(0x00);
+    //   IO.cmd(0x4F);
+    //   IO.data(0x00);
+    //   IO.data(0x00);
+    //   break;
+    // case 2:  // Portrait-Rotated
+    //   IO.data(0x01);
+    //   break;
+    // case 3:  // Landscape-Rotated
+    //   IO.data(0x04);
+    //   break;
+
+    default:
+      IO.data(0x03);
+      break;
   }
 
   if (_refresh_mode == GDEY042T81_REFRESH_MODE_FAST) {
@@ -84,32 +125,86 @@ void Gdey042T81::_wakeUp() {
     IO.data(0x91);
     IO.cmd(0x20);
     _waitBusy("epd_load temp 4G");
+  } else if (_refresh_mode == GDEY042T81_REFRESH_MODE_PARTIAL) {
+    IO.cmd(0x1A); // Write to temperature register
+    IO.data(0x6E);
+    IO.cmd(0x22); // Load temperature value
+    IO.data(0x91);
+    IO.cmd(0x20);
+    _waitBusy("epd_load temp partial");
   }
 
   // Only initialize RAM if not in partial mode. Partial mode is handled in _setPartialRamArea.
-  if (_refresh_mode != GDEY042T81_REFRESH_MODE_PARTIAL) {
-    IO.cmd(0x44);
-    IO.data(0x00); // RAM x address start at 0
-    IO.data(0x31); // RAM x address end at 31h(49+1)*8->400
-    IO.cmd(0x45);
-    IO.data(0x2B);   // RAM y address start at 12Bh
-    IO.data(0x01);
-    IO.data(0x00); // RAM y address end at 00h
-    IO.data(0x00);
-
-    IO.cmd(0x4E);
-    IO.data(0x00);
-    IO.cmd(0x4F);
-    IO.data(0x2B);
-    IO.data(0x01);
-    _waitBusy("epd_wakeup RAM init");
+  if (_refresh_mode == GDEY042T81_REFRESH_MODE_PARTIAL) {
+    return;
   }
+  // == Set RAM Area
+  IO.cmd(0x44);
+  IO.data(0x00); // RAM x address start at 0
+  IO.data(0x31); // RAM x address end at 31h(49+1)*8->400
+
+  // Set Y range in pixels (up to 300-1). Since 300 requires 9 bits, we have to split it into
+  // 2 bytes. The first byte is the lower 8 bits, the second byte is the upper 8 bits.
+  IO.cmd(0x45);
+  IO.data(0x00); // RAM y address start at 00h
+  IO.data(0x00); // RAM y address start at 00h
+  IO.data(0x2B); // RAM y address end at 2Bh
+  IO.data(0x01); // RAM y address end at 01h
+
+  // == Set RAM Pointer
+  IO.cmd(0x4E);
+  IO.data(0x00);
+  IO.cmd(0x4F);
+  IO.data(0x00);
+  IO.data(0x00);
+
+  // switch (rotation) {
+  //   case 0: // Portrait
+  //     IO.cmd(0x44);
+  //     IO.data(0x00); // RAM x address start at 0
+  //     IO.data(0x31); // RAM x address end at 31h(49+1)*8->400
+  //     IO.cmd(0x45);
+  //     IO.data(0x2B); // RAM y address start at 12Bh
+  //     IO.data(0x01);
+  //     IO.data(0x00); // RAM y address end at 00h
+  //     IO.data(0x00);
+
+  //     IO.cmd(0x4E);
+  //     IO.data(0x00);
+  //     IO.cmd(0x4F);
+  //     IO.data(0x2B);
+  //     IO.data(0x01);
+  //     break;
+
+  //   case 1: // Landscape
+  //     break;
+  //   case 2: // Portrait-Rotated
+  //     IO.cmd(0x44);
+  //     IO.data(0x00); // RAM x address start at 0
+  //     IO.data(0x31); // RAM x address end at 31h(49+1)*8->400
+  //     IO.cmd(0x45);
+  //     IO.data(0x2B); // RAM y address start at 12Bh
+  //     IO.data(0x01);
+  //     IO.data(0x00); // RAM y address end at 00h
+  //     IO.data(0x00);
+
+  //     IO.cmd(0x4E);
+  //     IO.data(0x00);
+  //     IO.cmd(0x4F);
+  //     IO.data(0x2B);
+  //     IO.data(0x01);
+  //     break;
+  //   default: // 3 - Landscape-Rotated
+  //     break;
+  // }
+
+  _waitBusy("epd_wakeup RAM init");
 }
 
 void Gdey042T81::fillScreen(uint16_t color) {
-  // Force white for non-4G mode and gray colors
+  // Force black for non-4G mode and gray colors
   if (_refresh_mode != GDEY042T81_REFRESH_MODE_4G && (color == EPD_DARKGREY || color == EPD_LIGHTGREY)) {
-    color = EPD_WHITE;
+    color = EPD_BLACK;
   }
   
   uint16_t buf1 = 0;
@@ -149,7 +244,6 @@ void Gdey042T81::update()
   _wakeUp();
   
   // BLACK: Write RAM for black(0)/white (1)
-  IO.cmd(0x24);
   // v2 SPI optimizing. Check: https://github.com/martinberlin/cale-idf/wiki/About-SPI-optimization
   uint16_t i = 0;
   uint16_t bufferLength = GDEY042T81_BUFFER_SIZE; // Remove +1 to prevent buffer overflow
@@ -190,12 +284,13 @@ void Gdey042T81::update()
     case GDEY042T81_REFRESH_MODE_FAST:
       IO.data(0xC7);
       break;
-    case GDEY042T81_REFRESH_MODE_PARTIAL:
-      IO.data(0xFF);
-      break;
     case GDEY042T81_REFRESH_MODE_4G:
       // TODO: Maybe there is an undocumented fast mode for 4G?
       IO.data(0xCF);  // 4G mode, full refresh
+      break;
+    case GDEY042T81_REFRESH_MODE_PARTIAL:
+      // Handled in updateWindow
+      // IO.data(0xFF);
       break;
   }
   IO.cmd(0x20);  //Activate Display Update Sequence
@@ -210,7 +305,10 @@ void Gdey042T81::update()
   _sleep();
 }
 
+// Supported rotation is 0, 1, 2, 3
+// 0 is Portrait, 1 is Landscape, 2 is Portrait-Rotated, 3 is Landscape-Rotated
 void Gdey042T81::_rotate(uint16_t& x, uint16_t& y, uint16_t& w, uint16_t& h) {
+  return;
   switch (getRotation())
   {
     case 1:
@@ -231,31 +329,67 @@ void Gdey042T81::_rotate(uint16_t& x, uint16_t& y, uint16_t& w, uint16_t& h) {
 }
 
 void Gdey042T81::_setPartialRamArea(uint16_t xs_bx, uint16_t y, uint16_t xe_bx, uint16_t ye) {
-  // Set X range (using byte-aligned coordinates)
+  switch (getRotation()) {
+    case 0:
+      break;
+    case 1:
+      break;
+    case 2:
+      break;
+    case 3:
+      break;
+    default:
+      break;
+  }
+
+  // == Set RAM Area
   IO.cmd(0x44);
   IO.data(xs_bx);
   IO.data(xe_bx - 1);  // Hardware expects inclusive range end point
 
-  // Set Y range (using pixel coordinates)
+  // Set Y range in pixels (up to 300-1). Since 300 requires 9 bits, we have to split it into
+  // 2 bytes. The first byte is the lower 8 bits, the second byte is the upper 8 bits.
   IO.cmd(0x45);
-  if (getRotation() == 2) {
-    IO.data(ye % 256);
-    IO.data(ye / 256);
-    IO.data(y % 256);
-    IO.data(y / 256);
-  } else {
-    IO.data(y % 256);
-    IO.data(y / 256);
-    IO.data(ye % 256);
-    IO.data(ye / 256);
-  }
+  IO.data(y % 256);
+  IO.data(y / 256);
+  IO.data(ye % 256);
+  IO.data(ye / 256);
 
-  // Set current position (start position for data transfer)
+  // == Set RAM Pointer
   IO.cmd(0x4E);
   IO.data(xs_bx);
   IO.cmd(0x4F);
-  IO.data((GDEY042T81_HEIGHT - 1 - y) % 256);
-  IO.data((GDEY042T81_HEIGHT - 1 - y) / 256);
+  IO.data(y % 256);
+  IO.data(y / 256);
+
+  // =========================================
+  // // Set X range (using byte-aligned coordinates)
+  // IO.cmd(0x44);
+  // IO.data(xs_bx);
+  // IO.data(xe_bx - 1);  // Hardware expects inclusive range end point
+
+  // // Set Y range (using pixel coordinates)
+  // IO.cmd(0x45);
+  // // IO.cmd(0x90);
+  // if (getRotation() == 2) {
+  //   IO.data(ye % 256);
+  //   IO.data(ye / 256);
+  //   IO.data(y % 256);
+  //   IO.data(y / 256);
+  // } else {
+  //   IO.data(y % 256);
+  //   IO.data(y / 256);
+  //   IO.data(ye % 256);
+  //   IO.data(ye / 256);
+  // }
+
+  // // Set current position (start position for data transfer)
+  // IO.cmd(0x4E);
+  // IO.data(xs_bx);
+  // IO.cmd(0x4F);
+  // IO.data((GDEY042T81_HEIGHT - 1 - y) % 256);
+  // IO.data((GDEY042T81_HEIGHT - 1 - y) / 256);
+
   _waitBusy("epd_wakeup RAM init");
 }
 
@@ -266,59 +400,58 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
     }
     if (debug_enabled) ESP_LOGI(TAG, "updateWindow incoming: x=%u y=%u w=%u h=%u rot=%d", x, y, w, h, getRotation());
 
-    if ((x+w) > (GDEY042T81_WIDTH - 1)) {
+    if ((x+w) > (width() - 1)) {
       ESP_LOGE(TAG, "updateWindow: x+w (%u) > GDEY042T81_WIDTH (%u), limiting w to max-width", x+w, GDEY042T81_WIDTH);
-      w = GDEY042T81_WIDTH - 1 - x;
+      if (x >= width()) {
+        w = 0;
+      } else {
+        w = width() - 1 - x;
+      }
     }
 
-    // Same mirroring as in drawPixel, applied to the region
-    // Apply mirroring in X direction first - this is critical for correct coordinate mapping
-    x = GDEY042T81_WIDTH - x - w - 1;
-
-    if ((y+h) > (GDEY042T81_HEIGHT - 1)) {
+    if ((y+h) > (height() - 1)) {
       ESP_LOGE(TAG, "updateWindow: y+h (%u) > GDEY042T81_HEIGHT (%u), limiting h to max-height", y+h, GDEY042T81_HEIGHT);
-      h = GDEY042T81_HEIGHT - 1 - y;
+      if (y >= height()) {
+        h = 0;
+      } else {
+        h = height() - 1 - y;
+      }
     }
 
     if (debug_enabled) ESP_LOGI(TAG, "updateWindow after mirroring: x=%u y=%u w=%u h=%u", x, y, w, h);
     
-    // Apply rotation if needed - AFTER mirroring, to match drawPixel's sequence
-    if (using_rotation) _rotate(x, y, w, h);
-    if (debug_enabled) ESP_LOGI(TAG, "updateWindow after rotation: x=%u y=%u w=%u h=%u rot=%d", x, y, w, h, getRotation());
-    
     // Boundary checks
-    if (x >= GDEY042T81_WIDTH) {
+    if (x >= width()) {
       ESP_LOGE(TAG, "updateWindow: x (%u) >= GDEY042T81_WIDTH (%u), ignoring update", x, GDEY042T81_WIDTH);
       return;
     }
-    if (y >= GDEY042T81_HEIGHT) {
+    if (y >= height()) {
       ESP_LOGE(TAG, "updateWindow: y (%u) >= GDEY042T81_HEIGHT (%u), ignoring update", y, GDEY042T81_HEIGHT);
       return;
     }
     
     // Calculate boundaries, ensuring they're within display limits
-    uint16_t xe = gx_uint16_min(GDEY042T81_WIDTH, x + w) - 1;
-    uint16_t ye = gx_uint16_min(GDEY042T81_HEIGHT, y + h) - 1;
+    uint16_t xe = gx_uint16_min(width(), x + w) - 1;
+    uint16_t ye = gx_uint16_min(height(), y + h) - 1;
     
     // Convert to byte-aligned coordinates for X (display uses byte addressing for X)
     uint16_t xs_bx = x / 8;
     uint16_t xe_bx = (xe + 7) / 8;  // Proper ceil division for bytes
     
     if (debug_enabled) ESP_LOGI(TAG, "updateWindow final: x=%u y=%u xe=%u ye=%u xs_bx=%u xe_bx=%u", x, y, xe, ye, xs_bx, xe_bx);
+    printf("updateWindow final: x=%u y=%u xe=%u ye=%u xs_bx=%u xe_bx=%u\n", x, y, xe, ye, xs_bx, xe_bx);
 
     _wakeUp();
     _setPartialRamArea(xs_bx, y, xe_bx, ye);
-
+    
     // Prepare to transfer image data
-    IO.cmd(0x24);  // Write RAM (black/white buffer)
     uint16_t bufferMaxSpi = 3000;
     uint8_t xbuf[bufferMaxSpi];
     uint32_t bufIndex = 0;
-
-    // Calculate bytes per row once (constant for this display)
-    const uint16_t bytes_per_row = GDEY042T81_WIDTH / 8;
     
     // Process the window data row by row and byte by byte
+    IO.cmd(0x24);  // Write RAM (black/white buffer)
+    uint16_t bytes_per_row = width() / 8;
     for (int16_t y1 = y; y1 <= ye; y1++) {
         for (uint16_t x_byte = xs_bx; x_byte < xe_bx; x_byte++) {
             uint32_t idx = (uint32_t)y1 * bytes_per_row + x_byte;
@@ -329,21 +462,43 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
                     bufIndex = 0;
                 }
             } else {
-                ESP_LOGE(TAG, "Buffer index out of bounds: %lu", (unsigned long)idx);
+                ESP_LOGE(TAG, "Buffer2 index out of bounds: %lu", (unsigned long)idx);
             }
         }
     }
-    
+
     // Send any remaining data
     if (bufIndex > 0) {
         IO.data(xbuf, bufIndex);
     }
 
-    // Finalize the update
-    IO.cmd(0x22);
+    // // Transfer _buffer2 data as well
+    // IO.cmd(0x26);  // Write RAM (red/white buffer)
+    // bufIndex = 0;
+    // for (int16_t y1 = y; y1 <= ye; y1++) {
+    //     for (uint16_t x_byte = xs_bx; x_byte < xe_bx; x_byte++) {
+    //         uint32_t idx = (uint32_t)y1 * bytes_per_row + x_byte;
+    //         if (idx < GDEY042T81_BUFFER_SIZE) {
+    //             xbuf[bufIndex++] = _buffer2[idx];
+    //             if (bufIndex == bufferMaxSpi) {
+    //                 IO.data(xbuf, bufIndex);
+    //                 bufIndex = 0;
+    //             }
+    //         } else {
+    //             ESP_LOGE(TAG, "Buffer2 index out of bounds: %lu", (unsigned long)idx);
+    //         }
+    //     }
+    // }
+    // // Send any remaining buffer2 data
+    // if (bufIndex > 0) {
+    //     IO.data(xbuf, bufIndex);
+    // }
+    
+    IO.cmd(0x22); // Finalize the update
     IO.data(0xFF); // Use partial update mode
     IO.cmd(0x20);
     _waitBusy("partial update");
+    IO.cmd(0x92); // partial out
 
     _sleep();
 }
@@ -383,25 +538,26 @@ void Gdey042T81::drawPixel(int16_t x, int16_t y, uint16_t color) {
 
   // MIRROR Issue. Swap X axis (For sure there is a smarter solution than this one)
   // Correct the mirroring calculation to map 0 -> width-1, etc.
-  x = width() - 1 - x;
+  // x = width() - 1 - x;
 
   // Check rotation, move pixel around if necessary
-  switch (getRotation())
-  {
-    case 1:
-      swap(x, y);
-      x = GDEY042T81_WIDTH - x - 1;
-      break;
-    case 2:
-      x = GDEY042T81_WIDTH - x - 1;
-      y = GDEY042T81_HEIGHT - y - 1;
-      break;
-    case 3:
-      swap(x, y);
-      y = GDEY042T81_HEIGHT - y - 1;
-      break;
-  }
-  uint16_t i = x / 8 + y * GDEY042T81_WIDTH / 8;
+  // switch (getRotation())
+  // {
+  //   case 1:
+  //     swap(x, y);
+  //     x = GDEY042T81_WIDTH - x - 1;
+  //     break;
+  //   case 2:
+  //     x = GDEY042T81_WIDTH - x - 1;
+  //     y = GDEY042T81_HEIGHT - y - 1;
+  //     break;
+  //   case 3:
+  //     swap(x, y);
+  //     y = GDEY042T81_HEIGHT - y - 1;
+  //     break;
+  // }
+  
+  uint16_t i = x / 8 + y * width() / 8;
   uint8_t mask = 0x80 >> (x & 7);
 
   // Non-4G mode only supports black and white
