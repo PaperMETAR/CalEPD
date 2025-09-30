@@ -45,7 +45,6 @@ class Gdey042T81 : public Epd
 
     void setRefreshMode(GDEY042T81_REFRESH_MODE mode);
     
-    // EPD tests 
     void init(bool debug = false);
 
     void setMode(GDEY042T81_REFRESH_MODE mode);
