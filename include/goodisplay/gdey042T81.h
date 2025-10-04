@@ -60,9 +60,17 @@ class Gdey042T81 : public Epd
   private:
     EpdSpi& IO;
 
+    // Flag to check if the screen has been refreshed at least once. This is used to avoid garbled screen
+    // if the screen was never fully refreshed before a partial update.
+    bool _refreshed_at_least_once = false;
+
+    void _clearScreenWithoutBuffer(uint16_t color);
+
     uint8_t _buffer1[GDEY042T81_BUFFER_SIZE];
     uint8_t _buffer2[GDEY042T81_BUFFER_SIZE];
     GDEY042T81_REFRESH_MODE _refresh_mode = GDEY042T81_REFRESH_MODE_FULL;
+
+    void _update(bool ignore_buffer = false, uint16_t buf1 = 0, uint16_t buf2 = 0);
 
     void _wakeUp();
     

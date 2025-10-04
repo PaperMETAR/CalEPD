@@ -239,10 +239,47 @@ void Gdey042T81::fillScreen(uint16_t color) {
                           color, (_refresh_mode == GDEY042T81_REFRESH_MODE_4G), sizeof(_buffer1));
 }
 
+// Clear the screen without using the buffer using the given color.
+void Gdey042T81::_clearScreenWithoutBuffer(uint16_t color) {
+  // Force black for non-4G mode and gray colors
+  if (_refresh_mode != GDEY042T81_REFRESH_MODE_4G && (color == EPD_DARKGREY || color == EPD_LIGHTGREY)) {
+    color = EPD_BLACK;
+  }
+  
+  uint16_t buf1 = 0;
+  uint16_t buf2 = 0;
+
+  switch (color) {
+    case EPD_DARKGREY: // Dark gray
+      buf1 = 0x00;  // All bits 0
+      buf2 = 0xFF;  // All bits 1
+      break;
+    case EPD_LIGHTGREY: // Light gray
+      buf1 = 0xFF;  // All bits 1
+      buf2 = 0x00;  // All bits 0
+      break;
+    case EPD_WHITE: // White
+      buf1 = 0xFF;  // All bits 1
+      buf2 = 0xFF;  // All bits 1
+      break;
+    default: // Black (case 0)
+      buf1 = 0x00;  // All bits 0
+      buf2 = 0x00;  // All bits 0
+      break;
+  }
+  _update(true, buf1, buf2);
+}
+
 void Gdey042T81::update()
+{
+  _update(false, 0, 0);
+}
+
+void Gdey042T81::_update(bool ignore_buffer, uint16_t buf1, uint16_t buf2)
 {
   uint64_t startTime = esp_timer_get_time();
   _wakeUp();
+  _refreshed_at_least_once = true;
   
   // BLACK: Write RAM for black(0)/white (1)
   // v2 SPI optimizing. Check: https://github.com/martinberlin/cale-idf/wiki/About-SPI-optimization
@@ -254,7 +291,11 @@ void Gdey042T81::update()
   IO.cmd(0x24);
   uint32_t bufindex = 0;
   for (i = 0; i < bufferLength; i++) {
-      xbuf[bufindex++] = _buffer1[i];
+      if (ignore_buffer) {
+        xbuf[bufindex++] = buf1;
+      } else {
+        xbuf[bufindex++] = _buffer1[i];
+      }
       // Flush SPI buffer when full or at the end
       if (bufindex == bufferMaxSpi || i == bufferLength - 1) {
           IO.data(xbuf, bufindex);  // Send actual number of bytes
@@ -265,7 +306,11 @@ void Gdey042T81::update()
   IO.cmd(0x26);
   bufindex = 0;
   for (i = 0; i < bufferLength; i++) {
-      xbuf[bufindex++] = _buffer2[i];
+      if (ignore_buffer) {
+        xbuf[bufindex++] = buf2;
+      } else {
+        xbuf[bufindex++] = _buffer2[i];
+      }
       // Flush SPI buffer when full or at the end
       if (bufindex == bufferMaxSpi || i == bufferLength - 1) {
           IO.data(xbuf, bufindex);  // Send actual number of bytes
@@ -416,6 +461,12 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
     if ((y+h) > height()) {
       ESP_LOGE(TAG, "updateWindow: y+h (%u) > height (%u), limiting h to max-height", y+h, height());
       h = height() - y;
+    }
+
+    if (!_refreshed_at_least_once) {
+      setRefreshMode(GDEY042T81_REFRESH_MODE_FAST);
+      _clearScreenWithoutBuffer(EPD_WHITE);
+      setRefreshMode(GDEY042T81_REFRESH_MODE_PARTIAL);
     }
 
     // Calculate boundaries, ensuring they're within display limits
