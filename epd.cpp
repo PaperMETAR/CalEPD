@@ -122,32 +122,33 @@ void Epd::draw_centered_text(const GFXfont *font, int16_t x, int16_t y, uint16_t
     char max_buffer[1024];
     int size = vsnprintf(max_buffer, sizeof max_buffer, format, args);
     va_end(args);
-    string text = "";
-    if (size < sizeof(max_buffer)) {
-      text = std::string(max_buffer);
-      
-    } else {
+    string text = std::string(max_buffer);
+    if (size >= sizeof(max_buffer)) {
       ESP_LOGE("draw_centered_text", "max_buffer out of range. Increase max_buffer!");
     }
-    // Draw external boundary where text needs to be centered in the middle
+    
     setFont(font);
     int16_t text_x = 0;
     int16_t text_y = 0;
     uint16_t text_w = 0;
     uint16_t text_h = 0;
 
-    getTextBounds(text.c_str(), x, y, &text_x, &text_y, &text_w, &text_h);
-    // Calculate the middle position
+    // Get text bounds at origin to get pure dimensions and offsets
+    getTextBounds(text.c_str(), 0, 0, &text_x, &text_y, &text_w, &text_h);
     
+    // Calculate centered position
+    // text_x is the left offset from cursor position (usually negative or small)
+    // To center: place cursor so text_x + text_w/2 aligns with x + w/2
+    int16_t final_x = x + (w - text_w) / 2 - text_x;
+    
+    // Keep the original vertical centering logic that was working
     int16_t ty = (h/2)+y+(text_h/2);
+    
     // Fix for big fonts (>100 pt)
-    if (text_h > (height()/3) ) {
-      text_x += (w-text_w)/2.2;
-      ty -= text_h*1.8;
-    } else {
-      text_x += (w-text_w)/2;
+    if (text_h > (height()/3)) {
+      final_x = x + static_cast<int16_t>(round((w - text_w) / 2.2)) - text_x;
+      ty -= static_cast<int16_t>(round(text_h * 1.8));
     }
-    //drawRect(text_x, ty-text_h, text_w, text_h, 0); // text boundaries test
 
     if (text_w > w) {
         printf("W: Text width out of bounds");
@@ -156,6 +157,6 @@ void Epd::draw_centered_text(const GFXfont *font, int16_t x, int16_t y, uint16_t
         printf("W: Text height out of bounds");
     }
 
-    setCursor(text_x, ty);
+    setCursor(final_x, ty);
     print(text);
 }
