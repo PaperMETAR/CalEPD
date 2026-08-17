@@ -285,20 +285,18 @@ void Gdey042T81::_update(bool ignore_buffer, uint16_t buf1, uint16_t buf2)
   // v2 SPI optimizing. Check: https://github.com/martinberlin/cale-idf/wiki/About-SPI-optimization
   uint16_t i = 0;
   uint16_t bufferLength = GDEY042T81_BUFFER_SIZE;
-  uint16_t bufferMaxSpi = 3000;
-  uint8_t xbuf[bufferMaxSpi];
 
   IO.cmd(0x24);
   uint32_t bufindex = 0;
   for (i = 0; i < bufferLength; i++) {
       if (ignore_buffer) {
-        xbuf[bufindex++] = buf1;
+        _spi_chunk[bufindex++] = buf1;
       } else {
-        xbuf[bufindex++] = _buffer1[i];
+        _spi_chunk[bufindex++] = _buffer1[i];
       }
       // Flush SPI buffer when full or at the end
-      if (bufindex == bufferMaxSpi || i == bufferLength - 1) {
-          IO.data(xbuf, bufindex);  // Send actual number of bytes
+      if (bufindex == GDEY042T81_SPI_CHUNK || i == bufferLength - 1) {
+          IO.data(_spi_chunk, bufindex);  // Send actual number of bytes
           bufindex = 0;
       }
   }
@@ -307,13 +305,13 @@ void Gdey042T81::_update(bool ignore_buffer, uint16_t buf1, uint16_t buf2)
   bufindex = 0;
   for (i = 0; i < bufferLength; i++) {
       if (ignore_buffer) {
-        xbuf[bufindex++] = buf2;
+        _spi_chunk[bufindex++] = buf2;
       } else {
-        xbuf[bufindex++] = _buffer2[i];
+        _spi_chunk[bufindex++] = _buffer2[i];
       }
       // Flush SPI buffer when full or at the end
-      if (bufindex == bufferMaxSpi || i == bufferLength - 1) {
-          IO.data(xbuf, bufindex);  // Send actual number of bytes
+      if (bufindex == GDEY042T81_SPI_CHUNK || i == bufferLength - 1) {
+          IO.data(_spi_chunk, bufindex);  // Send actual number of bytes
           bufindex = 0;
       }
   }
@@ -498,8 +496,6 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
     _setPartialRamArea(xs_bx, y, xe_bx, ye);
     
     // Prepare to transfer image data
-    uint16_t bufferMaxSpi = 3000;
-    uint8_t xbuf[bufferMaxSpi];
     uint32_t bufIndex = 0;
     
     // Process the window data row by row and byte by byte
@@ -510,9 +506,9 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
         for (uint16_t x_byte = xs_bx; x_byte < xe_bx; x_byte++) {
             uint32_t idx = (uint32_t)y1 * bytes_per_row + x_byte;
             if (idx < GDEY042T81_BUFFER_SIZE) {
-                xbuf[bufIndex++] = _buffer1[idx];
-                if (bufIndex == bufferMaxSpi) {
-                    IO.data(xbuf, bufIndex);
+                _spi_chunk[bufIndex++] = _buffer1[idx];
+                if (bufIndex == GDEY042T81_SPI_CHUNK) {
+                    IO.data(_spi_chunk, bufIndex);
                     bufIndex = 0;
                 }
             } else {
@@ -522,7 +518,7 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
     }
     // Send any remaining data
     if (bufIndex > 0) {
-        IO.data(xbuf, bufIndex);
+        IO.data(_spi_chunk, bufIndex);
     }
 
     // _buffer2 must explicitly not be written to for partial updates.
@@ -540,9 +536,9 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
         for (uint16_t x_byte = xs_bx; x_byte < xe_bx; x_byte++) {
             uint32_t idx = (uint32_t)y1 * bytes_per_row + x_byte;
             if (idx < GDEY042T81_BUFFER_SIZE) {
-                xbuf[bufIndex++] = _buffer1[idx];
-                if (bufIndex == bufferMaxSpi) {
-                    IO.data(xbuf, bufIndex);
+                _spi_chunk[bufIndex++] = _buffer1[idx];
+                if (bufIndex == GDEY042T81_SPI_CHUNK) {
+                    IO.data(_spi_chunk, bufIndex);
                     bufIndex = 0;
                 }
             } else {
@@ -552,7 +548,7 @@ void Gdey042T81::updateWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bo
     }
     // Send any remaining data
     if (bufIndex > 0) {
-        IO.data(xbuf, bufIndex);
+        IO.data(_spi_chunk, bufIndex);
     }
     _sleep();
 }

@@ -22,6 +22,7 @@
 #define GDEY042T81_WIDTH 400
 #define GDEY042T81_HEIGHT 300
 #define GDEY042T81_BUFFER_SIZE (uint32_t(GDEY042T81_WIDTH) * uint32_t(GDEY042T81_HEIGHT) / 8)
+#define GDEY042T81_SPI_CHUNK 3000
 
 #define GDEY042T81_8PIX_BLACK 0x00
 #define GDEY042T81_8PIX_WHITE 0xFF
@@ -68,6 +69,7 @@ class Gdey042T81 : public Epd
 
     uint8_t _buffer1[GDEY042T81_BUFFER_SIZE];
     uint8_t _buffer2[GDEY042T81_BUFFER_SIZE];
+    uint8_t _spi_chunk[GDEY042T81_SPI_CHUNK];
     GDEY042T81_REFRESH_MODE _refresh_mode = GDEY042T81_REFRESH_MODE_FULL;
 
     void _update(bool ignore_buffer = false, uint16_t buf1 = 0, uint16_t buf2 = 0);
